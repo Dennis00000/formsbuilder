@@ -37,7 +37,6 @@ export async function GET(request: Request) {
     }
 
     if (tokenData.access_token) {
-      // Get user data
       const userResponse = await fetch("https://api.github.com/user", {
         headers: {
           Authorization: `Bearer ${tokenData.access_token}`,
