@@ -1,0 +1,3 @@
+```typescriptreact file="app/signup/page.tsx" isDeleted="true"
+...deleted...
+

@@ -1,0 +1,3 @@
+```typescript file="app/error/layout.tsx" isDeleted="true"
+...deleted...
+

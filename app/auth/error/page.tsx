@@ -1,0 +1,3 @@
+```typescript file="app/auth/error/page.tsx" isDeleted="true"
+...deleted...
+
