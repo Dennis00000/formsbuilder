@@ -1,3 +1,4 @@
-```typescript file="app/auth/error/loading.tsx" isDeleted="true"
-...deleted...
+export default function AuthErrorLoading() {
+  return <div>Loading...</div>;
+}
 

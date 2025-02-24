@@ -1,3 +1,8 @@
-```typescript file="app/error/layout.tsx" isDeleted="true"
-...deleted...
+export default function ErrorLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <div>{children}</div>;
+}
 

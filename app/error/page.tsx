@@ -1,3 +1,9 @@
-```typescript file="app/error/page.tsx" isDeleted="true"
-...deleted...
+export default function ErrorPage() {
+  return (
+    <div>
+      <h1>Error</h1>
+      <p>Something went wrong.</p>
+    </div>
+  );
+}
 

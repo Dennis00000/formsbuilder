@@ -1,3 +1,4 @@
-```typescript file="app/error/loading.tsx" isDeleted="true"
-...deleted...
+export default function ErrorLoading() {
+  return <div>Loading...</div>;
+}
 

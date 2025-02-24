@@ -1,3 +1,8 @@
-```typescript file="app/auth/error/layout.tsx" isDeleted="true"
-...deleted...
+export default function AuthErrorLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <div>{children}</div>;
+}
 

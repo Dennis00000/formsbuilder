@@ -1,3 +1,9 @@
-```typescriptreact file="app/signup/page.tsx" isDeleted="true"
-...deleted...
+export default function SignupPage() {
+  return (
+    <div>
+      <h1>Sign Up</h1>
+      <p>Create your account</p>
+    </div>
+  );
+}
 
