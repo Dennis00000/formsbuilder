@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverActions: true,
-  }
+  // Remove serverActions since it's now enabled by default
 }
 
 const withNextIntl = require('next-intl/plugin')(
