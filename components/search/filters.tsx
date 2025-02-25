@@ -1,63 +1,33 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { useRouter, useSearchParams } from "next/navigation"
-import { useTransition } from "react"
-
-const sortOptions = [
-  { value: "newest", label: "Newest First" },
-  { value: "oldest", label: "Oldest First" },
-  { value: "mostLiked", label: "Most Liked" },
-  { value: "mostResponses", label: "Most Responses" },
-]
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useTranslations } from 'next-intl'
+import type { SortOption } from '@/lib/db'
 
 export function Filters() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [isPending, startTransition] = useTransition()
+  const t = useTranslations('forms.filters.sort')
 
-  const currentSort = searchParams.get("sort") || "newest"
-
-  const handleSortChange = (value: string) => {
-    const params = new URLSearchParams(searchParams.toString())
-    params.set("sort", value)
-
-    startTransition(() => {
-      router.push(`/forms?${params.toString()}`)
-    })
+  const handleSort = (value: string) => {
+    const params = new URLSearchParams(searchParams)
+    params.set('sort', value)
+    router.push(`?${params.toString()}`)
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="min-w-[120px]">
-            Sort By
-            {isPending && <div className="ml-2 animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[200px]">
-          <DropdownMenuLabel>Sort By</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuRadioGroup value={currentSort} onValueChange={handleSortChange}>
-            {sortOptions.map((option) => (
-              <DropdownMenuRadioItem key={option.value} value={option.value}>
-                {option.label}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+    <Select defaultValue={searchParams.get('sort') ?? 'newest'} onValueChange={handleSort}>
+      <SelectTrigger className="w-[180px]">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="newest">{t('newest')}</SelectItem>
+        <SelectItem value="oldest">{t('oldest')}</SelectItem>
+        <SelectItem value="mostLiked">{t('mostLiked')}</SelectItem>
+        <SelectItem value="mostResponses">{t('mostResponses')}</SelectItem>
+      </SelectContent>
+    </Select>
   )
 }
 

@@ -1,10 +1,24 @@
 {
   "home": {
-    "title": "Kurkite nuostabias formas",
-    "subtitle": "Per kelias minutes",
-    "description": "Kurkite gražias formas, apklausas ir viktorinas su mūsų paprasta formų kūrimo sistema. Dalinkitės su auditorija ir gaukite atsakymus realiu laiku.",
+    "title": "Sveiki atvykę į",
+    "subtitle": "QuizForm",
+    "description": "Lengvai kurkite ir dalinkitės formomis",
     "getStarted": "Pradėti",
-    "signIn": "Prisijungti"
+    "signIn": "Prisijungti",
+    "locale": "lt"
+  },
+  "forms": {
+    "title": "Formos",
+    "createNew": "Sukurti naują formą",
+    "search": "Ieškoti formų...",
+    "filters": {
+      "sort": {
+        "newest": "Naujausios",
+        "oldest": "Seniausios",
+        "mostLiked": "Daugiausiai pamėgtos",
+        "mostResponses": "Daugiausiai atsakymų"
+      }
+    }
   }
 }
 

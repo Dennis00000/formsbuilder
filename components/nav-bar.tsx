@@ -6,13 +6,19 @@ import { supabase } from "@/lib/supabase"
 import { useEffect, useState } from "react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LanguageSwitcher } from "@/components/language-switcher"
+import type { User } from '@supabase/supabase-js'
+import { useLocale } from 'next-intl'
 
-export function NavBar() {
+interface NavBarProps {
+  user: User | null
+}
+
+export function NavBar({ user }: NavBarProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
+  const locale = useLocale()
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -21,7 +27,6 @@ export function NavBar() {
         const {
           data: { session },
         } = await supabase.auth.getSession()
-        setUser(session?.user ?? null)
 
         if (session?.user) {
           // Check admin status
@@ -35,7 +40,6 @@ export function NavBar() {
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange(async (_event, session) => {
-          setUser(session?.user ?? null)
           if (session?.user) {
             const { data: userData } = await supabase.from("users").select("role").eq("id", session.user.id).single()
             setIsAdmin(userData?.role === "admin")
@@ -59,7 +63,7 @@ export function NavBar() {
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut()
-      router.push("/login")
+      router.push(`/${locale}/login`)
     } catch (error) {
       console.error("Sign out error:", error)
     }
@@ -88,15 +92,15 @@ export function NavBar() {
         <nav className="flex items-center gap-4">
           {user ? (
             <>
-              <a href="/dashboard">
-                <Button variant={pathname === "/dashboard" ? "default" : "ghost"}>Dashboard</Button>
+              <a href={`/${locale}/dashboard`}>
+                <Button variant={pathname === `/${locale}/dashboard` ? "default" : "ghost"}>Dashboard</Button>
               </a>
-              <a href="/forms/new">
-                <Button variant={pathname === "/forms/new" ? "default" : "ghost"}>Create Form</Button>
+              <a href={`/${locale}/forms/new`}>
+                <Button variant={pathname === `/${locale}/forms/new` ? "default" : "ghost"}>Create Form</Button>
               </a>
               {isAdmin && (
-                <a href="/admin">
-                  <Button variant={pathname === "/admin" ? "default" : "ghost"}>Admin</Button>
+                <a href={`/${locale}/admin`}>
+                  <Button variant={pathname === `/${locale}/admin` ? "default" : "ghost"}>Admin</Button>
                 </a>
               )}
               <Button variant="outline" onClick={handleSignOut}>
@@ -105,10 +109,10 @@ export function NavBar() {
             </>
           ) : (
             <>
-              <a href="/login">
+              <a href={`/${locale}/login`}>
                 <Button variant="ghost">Sign In</Button>
               </a>
-              <a href="/signup">
+              <a href={`/${locale}/signup`}>
                 <Button>Sign Up</Button>
               </a>
             </>

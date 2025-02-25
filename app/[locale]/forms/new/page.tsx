@@ -6,7 +6,11 @@ import { useTranslations } from "next-intl"
 
 export const dynamic = "force-dynamic"
 
-export default async function NewFormPage() {
+export default async function NewFormPage({
+  params: { locale }
+}: {
+  params: { locale: string }
+}) {
   const supabase = createServerClient()
   const t = useTranslations("forms")
 
@@ -15,7 +19,7 @@ export default async function NewFormPage() {
   } = await supabase.auth.getSession()
 
   if (!session) {
-    redirect("/login")
+    redirect(`/${locale}/login`)
   }
 
   return (

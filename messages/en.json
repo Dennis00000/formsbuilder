@@ -1,10 +1,24 @@
 {
   "home": {
-    "title": "Create Amazing Forms",
-    "subtitle": "In Minutes",
-    "description": "Build beautiful forms, surveys, and quizzes with our easy-to-use form builder. Share with your audience and collect responses in real-time.",
+    "title": "Welcome to",
+    "subtitle": "QuizForm",
+    "description": "Create and share forms easily",
     "getStarted": "Get Started",
-    "signIn": "Sign In"
+    "signIn": "Sign In",
+    "locale": "en"
+  },
+  "forms": {
+    "title": "Forms",
+    "createNew": "Create New Form",
+    "search": "Search forms...",
+    "filters": {
+      "sort": {
+        "newest": "Newest",
+        "oldest": "Oldest",
+        "mostLiked": "Most Liked",
+        "mostResponses": "Most Responses"
+      }
+    }
   }
 }
 

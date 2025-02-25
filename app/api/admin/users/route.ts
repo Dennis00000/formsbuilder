@@ -1,37 +1,55 @@
-import { NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase-server"
-import { supabaseAdmin } from "@/lib/supabase-admin"
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
+import type { Database } from '@/types/supabase'
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request) {
   try {
-    const supabase = createServerClient()
-
-    // Check if user is authenticated and is admin
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
+    const supabase = createRouteHandlerClient<Database>({ cookies })
+    const { data: { session } } = await supabase.auth.getSession()
 
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return new NextResponse('Unauthorized', { status: 401 })
     }
 
-    // Verify admin role
-    const { data: userData } = await supabase.from("users").select("role").eq("id", session.user.id).single()
+    // Check if user is admin
+    const { data: user } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', session.user.id)
+      .single()
 
-    if (userData?.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    if (!user || user.role !== 'admin') {
+      return new NextResponse('Forbidden', { status: 403 })
     }
 
-    // Update user role
-    const { role } = await request.json()
-    const { error } = await supabaseAdmin.from("users").update({ role }).eq("id", params.id)
+    const { searchParams } = new URL(request.url)
+    const query = searchParams.get('query') || ''
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = 20
+    const offset = (page - 1) * limit
+
+    const { data, error, count } = await supabase
+      .from('users')
+      .select(`
+        *,
+        forms:forms(count),
+        responses:responses(count)
+      `, { count: 'exact' })
+      .ilike('email', `%${query}%`)
+      .range(offset, offset + limit - 1)
+      .order('created_at', { ascending: false })
 
     if (error) throw error
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({
+      users: data,
+      totalPages: Math.ceil((count || 0) / limit),
+      currentPage: page,
+    })
   } catch (error) {
-    console.error("Error updating user role:", error)
-    return NextResponse.json({ error: "Failed to update user role" }, { status: 500 })
+    console.error('Error fetching users:', error)
+    return new NextResponse('Internal Server Error', { status: 500 })
   }
 }
 

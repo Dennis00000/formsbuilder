@@ -1,4 +1,10 @@
+import './globals.css'
 import type React from "react"
+
+export const metadata = {
+  generator: 'v0.dev'
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -6,11 +12,3 @@ export default function RootLayout({
 }) {
   return children
 }
-
-
-
-import './globals.css'
-
-export const metadata = {
-      generator: 'v0.dev'
-    };

@@ -5,7 +5,7 @@ import { notFound } from "next/navigation"
 import { createServerClient } from "@/lib/supabase-server"
 import { NextIntlClientProvider } from "next-intl"
 import { ThemeProvider } from "next-themes"
-import { NavBar } from "@/components/nav-bar"
+import { NavBarWrapper } from "@/components/nav-bar-wrapper"
 import { Toaster } from "@/components/ui/toaster"
 import { locales } from "@/config"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
@@ -38,20 +38,23 @@ export default async function LocaleLayout({
 
   const messages = await getMessages(locale)
   const supabase = createServerClient()
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  const { data: { session } } = await supabase.auth.getSession()
 
   return (
     <html lang={locale} suppressHydrationWarning>
       <body className={inter.className}>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <ThemeProvider 
+            attribute="class" 
+            defaultTheme="system" 
+            enableSystem 
+            disableTransitionOnChange
+          >
             <div className="min-h-screen bg-background">
+              <NavBarWrapper user={session?.user ?? null} />
               <Suspense fallback={<LoadingSpinner />}>
-                <NavBar user={session?.user} />
+                {children}
               </Suspense>
-              {children}
               <Toaster />
             </div>
           </ThemeProvider>
