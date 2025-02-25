@@ -1,211 +1,258 @@
-import { kv } from "@vercel/kv"
+import { supabase } from "./supabase"
 
-export type User = {
+// Define types
+export type SortOption = "newest" | "oldest" | "mostLiked" | "mostResponses"
+
+export interface Form {
   id: string
-  name: string | null
-  email: string
-  password?: string
-  image?: string
-  createdAt: string
+  title: string
+  description: string | null
+  questions: any[] // Assuming questions is an array of objects
+  is_public: boolean
+  user_id: string
+  created_at: string
+  updated_at: string
 }
 
-export type Form = {
+export interface Comment {
   id: string
+  form_id: string
+  user_id: string
+  content: string
+  created_at: string
+  user?: {
+    email: string
+  }
+}
+
+// Database interaction functions
+export async function createForm(data: {
   title: string
   description?: string
-  questions: Question[]
   isPublic: boolean
-  createdAt: string
-  updatedAt: string
   userId: string
+}): Promise<Form | null> {
+  try {
+    const { data: form, error } = await supabase
+      .from("forms")
+      .insert([
+        {
+          title: data.title,
+          description: data.description,
+          is_public: data.isPublic,
+          user_id: data.userId,
+        },
+      ])
+      .select()
+      .single()
+
+    if (error) throw error
+    return form
+  } catch (error) {
+    console.error("Error creating form:", error)
+    return null
+  }
 }
 
-export type Question = {
-  id: string
-  type: "text" | "choice" | "multipleChoice"
-  title: string
-  options?: string[]
+export async function getUserForms(userId: string): Promise<Form[]> {
+  try {
+    const { data, error } = await supabase
+      .from("forms")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error("Error fetching user forms:", error)
+    return []
+  }
 }
 
-export type Response = {
-  id: string
-  answers: Record<string, any>
-  createdAt: string
+export async function getForm(id: string): Promise<Form | null> {
+  try {
+    const { data, error } = await supabase.from("forms").select("*").eq("id", id).single()
+
+    if (error) throw error
+    return data || null
+  } catch (error) {
+    console.error("Error fetching form:", error)
+    return null
+  }
+}
+
+export async function createComment(data: {
   formId: string
   userId: string
-}
-
-export type Comment = {
-  id: string
   content: string
-  createdAt: string
-  formId: string
-  userId: string
-}
+}): Promise<Comment | null> {
+  try {
+    const { data: comment, error } = await supabase
+      .from("comments")
+      .insert([
+        {
+          form_id: data.formId,
+          user_id: data.userId,
+          content: data.content,
+        },
+      ])
+      .select(`*, user:user_id(email)`)
+      .single()
 
-export type Like = {
-  formId: string
-  userId: string
-  createdAt: string
-}
-
-// User operations
-export async function createUser(userData: Omit<User, "id" | "createdAt">) {
-  const id = crypto.randomUUID()
-  const user: User = {
-    ...userData,
-    id,
-    createdAt: new Date().toISOString(),
+    if (error) throw error
+    return comment
+  } catch (error) {
+    console.error("Error creating comment:", error)
+    return null
   }
-
-  await kv.hset(`user:${id}`, user)
-  await kv.set(`user:email:${userData.email}`, id)
-
-  return user
 }
 
-export async function getUserByEmail(email: string) {
-  const userId = await kv.get<string>(`user:email:${email}`)
-  if (!userId) return null
+export async function getFormComments(formId: string): Promise<Comment[]> {
+  try {
+    const { data, error } = await supabase
+      .from("comments")
+      .select(`*, user:user_id(email)`)
+      .eq("form_id", formId)
+      .order("created_at", { ascending: false })
 
-  return kv.hgetall<User>(`user:${userId}`)
-}
-
-export async function getUserById(id: string) {
-  return kv.hgetall<User>(`user:${id}`)
-}
-
-// Form operations
-export async function createForm(formData: Omit<Form, "id" | "createdAt" | "updatedAt">) {
-  const id = crypto.randomUUID()
-  const form: Form = {
-    ...formData,
-    id,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error("Error fetching comments:", error)
+    return []
   }
+}
 
-  await kv.hset(`form:${id}`, form)
-  await kv.zadd(`user:${formData.userId}:forms`, {
-    score: Date.now(),
-    member: id,
-  })
+export async function toggleLike(formId: string, userId: string): Promise<boolean> {
+  try {
+    // Check if the user already liked the form
+    const { data: existingLike, error: selectError } = await supabase
+      .from("likes")
+      .select("*")
+      .eq("form_id", formId)
+      .eq("user_id", userId)
+      .single()
 
-  if (form.isPublic) {
-    await kv.zadd("public:forms", {
-      score: Date.now(),
-      member: id,
-    })
+    if (selectError && selectError.code !== "404") {
+      throw selectError
+    }
+
+    if (existingLike) {
+      // Unlike the form
+      const { error: deleteError } = await supabase.from("likes").delete().eq("form_id", formId).eq("user_id", userId)
+
+      if (deleteError) throw deleteError
+      return false
+    } else {
+      // Like the form
+      const { error: insertError } = await supabase.from("likes").insert([
+        {
+          form_id: formId,
+          user_id: userId,
+        },
+      ])
+
+      if (insertError) throw insertError
+      return true
+    }
+  } catch (error) {
+    console.error("Error toggling like:", error)
+    throw error
   }
-
-  return form
 }
 
-export async function getForm(id: string) {
-  return kv.hgetall<Form>(`form:${id}`)
-}
+export async function getLikeCount(formId: string): Promise<number> {
+  try {
+    const { data, error } = await supabase.from("likes").select("count(*)", { count: "exact" }).eq("form_id", formId)
 
-export async function getUserForms(userId: string, page = 1, limit = 10) {
-  const start = (page - 1) * limit
-  const end = start + limit - 1
-
-  const formIds = await kv.zrange<string[]>(`user:${userId}:forms`, start, end)
-  const forms = await Promise.all(formIds.map((id) => kv.hgetall<Form>(`form:${id}`)))
-
-  return forms.filter(Boolean)
-}
-
-export async function searchForms(query: string, page = 1, limit = 10) {
-  const start = (page - 1) * limit
-  const end = start + limit - 1
-
-  const formIds = await kv.zrange<string[]>("public:forms", start, end)
-  const forms = await Promise.all(formIds.map((id) => kv.hgetall<Form>(`form:${id}`)))
-
-  return forms
-    .filter(Boolean)
-    .filter(
-      (form) =>
-        form.title.toLowerCase().includes(query.toLowerCase()) ||
-        form.description?.toLowerCase().includes(query.toLowerCase()),
-    )
-}
-
-// Response operations
-export async function createResponse(responseData: Omit<Response, "id" | "createdAt">) {
-  const id = crypto.randomUUID()
-  const response: Response = {
-    ...responseData,
-    id,
-    createdAt: new Date().toISOString(),
+    if (error) throw error
+    return data?.[0]?.count ?? 0
+  } catch (error) {
+    console.error("Error fetching like count:", error)
+    return 0
   }
-
-  await kv.hset(`response:${id}`, response)
-  await kv.zadd(`form:${responseData.formId}:responses`, {
-    score: Date.now(),
-    member: id,
-  })
-
-  return response
 }
 
-export async function getFormResponses(formId: string, page = 1, limit = 10) {
-  const start = (page - 1) * limit
-  const end = start + limit - 1
+export async function checkIfLiked(formId: string, userId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from("likes")
+      .select("*")
+      .eq("form_id", formId)
+      .eq("user_id", userId)
+      .single()
 
-  const responseIds = await kv.zrange<string[]>(`form:${formId}:responses`, start, end)
-  const responses = await Promise.all(responseIds.map((id) => kv.hgetall<Response>(`response:${id}`)))
+    if (error && error.code !== "404") {
+      throw error
+    }
 
-  return responses.filter(Boolean)
-}
-
-// Comment operations
-export async function createComment(commentData: Omit<Comment, "id" | "createdAt">) {
-  const id = crypto.randomUUID()
-  const comment: Comment = {
-    ...commentData,
-    id,
-    createdAt: new Date().toISOString(),
-  }
-
-  await kv.hset(`comment:${id}`, comment)
-  await kv.zadd(`form:${commentData.formId}:comments`, {
-    score: Date.now(),
-    member: id,
-  })
-
-  return comment
-}
-
-export async function getFormComments(formId: string, page = 1, limit = 10) {
-  const start = (page - 1) * limit
-  const end = start + limit - 1
-
-  const commentIds = await kv.zrange<string[]>(`form:${formId}:comments`, start, end)
-  const comments = await Promise.all(commentIds.map((id) => kv.hgetall<Comment>(`comment:${id}`)))
-
-  return comments.filter(Boolean)
-}
-
-// Like operations
-export async function toggleLike(formId: string, userId: string) {
-  const key = `form:${formId}:likes`
-  const exists = await kv.sismember(key, userId)
-
-  if (exists) {
-    await kv.srem(key, userId)
+    return !!data
+  } catch (error) {
+    console.error("Error checking if liked:", error)
     return false
-  } else {
-    await kv.sadd(key, userId)
-    return true
   }
 }
 
-export async function getLikes(formId: string) {
-  return kv.scard(`form:${formId}:likes`)
+interface SearchFormsOptions {
+  query?: string
+  page?: number
+  sortBy?: SortOption
+  isPublic?: boolean
+  limit?: number
 }
 
-export async function hasLiked(formId: string, userId: string) {
-  return kv.sismember(`form:${formId}:likes`, userId)
+interface SearchFormsResult {
+  forms: Form[]
+  totalPages: number
+  currentPage: number
+}
+
+export async function searchForms(options: SearchFormsOptions): Promise<SearchFormsResult> {
+  const { query = "", page = 1, sortBy = "newest", isPublic = true, limit = 12 } = options
+
+  const startIndex = (page - 1) * limit
+  const endIndex = startIndex + limit - 1
+
+  let dbQuery = supabase
+    .from("forms")
+    .select(`*, user:user_id(email), likes:likes(count), responses:responses(count)`, { count: "exact" })
+    .ilike("title", `%${query}%`)
+    .eq("is_public", isPublic)
+
+  switch (sortBy) {
+    case "newest":
+      dbQuery = dbQuery.order("created_at", { ascending: false })
+      break
+    case "oldest":
+      dbQuery = dbQuery.order("created_at", { ascending: true })
+      break
+    case "mostLiked":
+      dbQuery = dbQuery.order("likes", { ascending: false }) // This might not work directly, needs a join or function
+      break
+    case "mostResponses":
+      dbQuery = dbQuery.order("responses", { ascending: false }) // Same as mostLiked
+      break
+    default:
+      dbQuery = dbQuery.order("created_at", { ascending: false })
+  }
+
+  const { data, error, count } = await dbQuery.range(startIndex, endIndex)
+
+  if (error) {
+    console.error("Error searching forms:", error)
+    return { forms: [], totalPages: 0, currentPage: page }
+  }
+
+  const forms = data as Form[]
+
+  const totalForms = count || 0
+  const totalPages = Math.ceil(totalForms / limit)
+
+  return {
+    forms,
+    totalPages,
+    currentPage: page,
+  }
 }
 

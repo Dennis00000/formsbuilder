@@ -1,3 +1,0 @@
-```typescript file="types/next-auth.d.ts" isDeleted="true"
-...deleted...
-

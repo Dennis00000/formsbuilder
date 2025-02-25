@@ -1,38 +1,36 @@
-import { Search } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { createServerClient } from "@/lib/supabase-server"
+import { adminGetAllUsers } from "@/lib/admin"
+import { redirect } from "next/navigation"
+import { StatsCards } from "@/components/admin/stats-cards"
+import { UserTable } from "@/components/admin/user-table"
 
-export default function AdminPage() {
+export const dynamic = "force-dynamic"
+export const fetchCache = "force-no-store"
+
+export default async function AdminPage() {
+  const supabase = createServerClient()
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  if (!session) {
+    redirect("/login")
+  }
+
+  const { data: userData } = await supabase.from("users").select("role").eq("id", session.user.id).single()
+
+  if (userData?.role !== "admin") {
+    redirect("/dashboard")
+  }
+
+  const users = await adminGetAllUsers()
+
   return (
-    <div className="grid grid-cols-[240px_1fr] min-h-screen">
-      <aside className="border-r bg-muted/40 p-4 space-y-4">
-        <div className="font-semibold mb-2">Admin Panel</div>
-        <nav className="space-y-2">
-          <Button variant="ghost" className="w-full justify-start">
-            Forms
-          </Button>
-          <Button variant="ghost" className="w-full justify-start">
-            Manage Users
-          </Button>
-        </nav>
-      </aside>
-
-      <main className="p-8">
-        <div className="max-w-4xl mx-auto space-y-8">
-          <div className="flex items-center space-x-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search..." className="pl-8" />
-            </div>
-          </div>
-
-          <Card className="p-6">
-            <h2 className="text-lg font-semibold mb-4">Content Area</h2>
-            <p className="text-muted-foreground">Admin dashboard content will be displayed here.</p>
-          </Card>
-        </div>
-      </main>
+    <div className="container py-8 space-y-8">
+      <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+      <StatsCards />
+      <UserTable initialUsers={users} currentUserId={session.user.id} />
     </div>
   )
 }

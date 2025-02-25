@@ -1,150 +1,113 @@
 "use client"
 
-import { useState } from "react"
-import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd"
-import { GripVertical } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import type React from "react"
 
-type Question = {
-  id: string
-  type: "text" | "choice" | "multipleChoice"
-  title: string
-  options?: string[]
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
+import { useToast } from "@/components/ui/use-toast"
+import { createForm } from "@/lib/db"
+
+interface FormBuilderProps {
+  userId: string
 }
 
-export function FormBuilder() {
-  const [questions, setQuestions] = useState<Question[]>([])
-  const [title, setTitle] = useState("")
-  const [description, setDescription] = useState("")
+export function FormBuilder({ userId }: FormBuilderProps) {
+  const router = useRouter()
+  const { toast } = useToast()
+  const t = useTranslations("forms")
+  const [isLoading, setIsLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    isPublic: false,
+  })
 
-  const addQuestion = (type: Question["type"]) => {
-    const newQuestion: Question = {
-      id: Math.random().toString(),
-      type,
-      title: "",
-      options: type !== "text" ? [""] : undefined,
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+
+    if (!formData.title.trim()) {
+      toast({
+        title: t("error"),
+        description: t("titleRequired"),
+        variant: "destructive",
+      })
+      return
     }
-    setQuestions([...questions, newQuestion])
-  }
 
-  const updateQuestion = (id: string, updates: Partial<Question>) => {
-    setQuestions(questions.map((q) => (q.id === id ? { ...q, ...updates } : q)))
-  }
+    setIsLoading(true)
 
-  const onDragEnd = (result: any) => {
-    if (!result.destination) return
-
-    const items = Array.from(questions)
-    const [reorderedItem] = items.splice(result.source.index, 1)
-    items.splice(result.destination.index, 0, reorderedItem)
-
-    setQuestions(items)
-  }
-
-  const handleSubmit = async () => {
     try {
-      const response = await fetch("/api/forms", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          description,
-          questions,
-        }),
+      const form = await createForm({
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        isPublic: formData.isPublic,
+        userId,
       })
 
-      if (!response.ok) throw new Error("Failed to create form")
+      if (!form) {
+        throw new Error(t("createError"))
+      }
 
-      // Handle success (e.g., redirect to the new form)
+      toast({
+        title: t("success"),
+        description: t("formCreated"),
+      })
+
+      router.push(`/forms/${form.id}`)
     } catch (error) {
-      console.error("Error creating form:", error)
+      toast({
+        title: t("error"),
+        description: t("createError"),
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-4">
-        <Input placeholder="Form Title" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <Input placeholder="Form Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="title">{t("titleLabel")}</Label>
+        <Input
+          id="title"
+          value={formData.title}
+          onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
+          placeholder={t("titlePlaceholder")}
+          required
+        />
       </div>
 
-      <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="questions">
-          {(provided) => (
-            <div {...provided.droppableProps} ref={provided.innerRef}>
-              {questions.map((question, index) => (
-                <Draggable key={question.id} draggableId={question.id} index={index}>
-                  {(provided) => (
-                    <Card className="mb-4" ref={provided.innerRef} {...provided.draggableProps}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center space-x-4">
-                          <div {...provided.dragHandleProps} className="cursor-grab">
-                            <GripVertical className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                          <div className="flex-1 space-y-4">
-                            <Input
-                              placeholder="Question"
-                              value={question.title}
-                              onChange={(e) =>
-                                updateQuestion(question.id, {
-                                  title: e.target.value,
-                                })
-                              }
-                            />
-                            {question.options && (
-                              <div className="space-y-2">
-                                {question.options.map((option, i) => (
-                                  <Input
-                                    key={i}
-                                    placeholder={`Option ${i + 1}`}
-                                    value={option}
-                                    onChange={(e) => {
-                                      const newOptions = [...question.options!]
-                                      newOptions[i] = e.target.value
-                                      updateQuestion(question.id, {
-                                        options: newOptions,
-                                      })
-                                    }}
-                                  />
-                                ))}
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() =>
-                                    updateQuestion(question.id, {
-                                      options: [...question.options!, ""],
-                                    })
-                                  }
-                                >
-                                  Add Option
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </Draggable>
-              ))}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </DragDropContext>
-
-      <div className="space-x-4">
-        <Button onClick={() => addQuestion("text")}>Add Text Question</Button>
-        <Button onClick={() => addQuestion("choice")}>Add Single Choice Question</Button>
-        <Button onClick={() => addQuestion("multipleChoice")}>Add Multiple Choice Question</Button>
+      <div className="space-y-2">
+        <Label htmlFor="description">{t("descriptionLabel")}</Label>
+        <Textarea
+          id="description"
+          value={formData.description}
+          onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+          placeholder={t("descriptionPlaceholder")}
+          rows={4}
+        />
       </div>
 
-      <Button onClick={handleSubmit} className="w-full">
-        Save Form
+      <div className="flex items-center space-x-2">
+        <Switch
+          id="public"
+          checked={formData.isPublic}
+          onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isPublic: checked }))}
+        />
+        <Label htmlFor="public">{t("makePublic")}</Label>
+      </div>
+
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? t("creating") : t("create")}
       </Button>
-    </div>
+    </form>
   )
 }
 

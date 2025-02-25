@@ -1,0 +1,48 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "createForm": "Create Form",
+    "signOut": "Sign Out"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "createAccount": "Create Account",
+    "alreadyHaveAccount": "Already have an account?",
+    "dontHaveAccount": "Don't have an account?"
+  },
+  "home": {
+    "title": "Create Amazing Forms",
+    "subtitle": "In Minutes",
+    "description": "Build beautiful forms, surveys, and quizzes with our easy-to-use form builder. Share with your audience and collect responses in real-time.",
+    "getStarted": "Get Started",
+    "features": {
+      "title": "Features",
+      "description": "Everything you need to create professional forms and surveys.",
+      "easyToUse": {
+        "title": "Easy to Use",
+        "description": "Create forms in minutes with our intuitive drag-and-drop builder."
+      },
+      "collectResponses": {
+        "title": "Collect Responses",
+        "description": "Gather and analyze responses from your audience in real-time."
+      },
+      "secure": {
+        "title": "Secure",
+        "description": "Your data is protected with enterprise-grade security."
+      }
+    }
+  },
+  "dashboard": {
+    "searchForms": "Search forms...",
+    "newForm": "Start a new form",
+    "createBlankForm": "Create blank form",
+    "yourForms": "Your Forms",
+    "noForms": "You haven't created any forms yet. Create your first form to get started!",
+    "lastEdited": "Last edited"
+  }
+}
+
