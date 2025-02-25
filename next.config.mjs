@@ -8,11 +8,15 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+    domains: ['avatars.githubusercontent.com'],
   },
   experimental: {
     webpackBuildWorker: true,
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
+    serverActions: {
+      enabled: true
+    }
   },
   env: {
     NEXT_PUBLIC_APP_URL: process.env.VERCEL_URL 
